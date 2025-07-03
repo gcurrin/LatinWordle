@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Latin Wordle</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        h1 {
+            text-align: center;
+            font-size: xxx-large;
+        }
+        table {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: unset;
+            margin-bottom: 60px;
+        }
+        td {
+            margin: auto;
+            text-align: center;
+            border: 2px solid;
+            width: 78px;
+            height: 78px;
+            font-size: xxx-large;
+            background-color: lightgrey;
+            text-transform: uppercase;
+        }
+        #keyboard-cont {
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #keyboard-cont div {
+            display: flex;
+        }
+        .second-row {
+            margin: 0.5rem 0;
+        }
+        button {
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 1rem;
+            margin: 0 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .surrender {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+        .settings {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .reset {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        .popup {
+            margin: -100px auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%;
+            align-items: center;
+            background-color: transparent;
+            border-radius: 25px;
+            text-align: center;
+            font-size: xx-large;
+            color: transparent;
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+        .defUrl {
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>Latin Wordle</h1>
+
+<button id="settings" class="settings">⛭</button>
+
+<button id="reset" class="reset">🗘</button>
+
+<div id="popup" class="popup">
+    <h3 id="message">You win!</h3>
+    <h3 id="tries"></h3>
+    <h3 id="target_word"></h3>
+    <h5 id="definition"><a class="defUrl" id="defUrl" href=""></a></h5>
+</div>
+
+<table>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td></td><td></td><td></td><td></td><td></td>
+    </tr>
+</table>
+
+<div id="keyboard-cont">
+    <div class="first-row" id="first-row">
+        <button id="q">q</button>
+        <button id="w">w</button>
+        <button id="e">e</button>
+        <button id="r">r</button>
+        <button id="t">t</button>
+        <button id="y">y</button>
+        <button id="u">u</button>
+        <button id="i">i</button>
+        <button id="o">o</button>
+        <button id="p">p</button>
+    </div>
+    <div class="second-row">
+        <button id="a">a</button>
+        <button id="s">s</button>
+        <button id="d">d</button>
+        <button id="f">f</button>
+        <button id="g">g</button>
+        <button id="h">h</button>
+        <button id="j">j</button>
+        <button id="k">k</button>
+        <button id="l">l</button>
+    </div>
+    <div class="third-row">
+        <button>Enter</button>
+        <button id="z">z</button>
+        <button id="x">x</button>
+        <button id="c">c</button>
+        <button id="v">v</button>
+        <button id="b">b</button>
+        <button id="n">n</button>
+        <button id="m">m</button>
+        <button>Del</button>
+    </div>
+
+    <div id="targetInputArea"><form id="targetInputForm"><label for="wordInput">Target word input area</label><input type="text" id="wordInput"><button type="submit">Submit</button></form><button id="randomButton" onclick="pickRandom()">Random Word</button></div>
+
+    <button id="surrender" class="surrender">I give up</button>
+
+    <p>Beck Iverson - Latin Wordle Beta 2.2.7</p>
+</div>
+
+<script>
+    function cellElementAt(row, column) {
+        return cellElements[row * 5 + column]
+    }
+    const popup = document.getElementById("popup")
+    const message = document.getElementById("message")
+    const triesDisplay = document.getElementById("tries")
+    const targetWordDisplay = document.getElementById("target_word")
+    const definition = document.getElementById("definition")
+    const defUrl = document.getElementById("defUrl")
+    const cellElements = document.querySelectorAll('td')
+    let targetWord = ""
+    let guess = ""
+    let row = 0
+    let column = 0
+    let tries = 0
+    let hasWon = false;
+    let hasLost = false;
+
+    document.getElementById("targetInputForm").addEventListener("submit", event => {
+        event.preventDefault();
+
+        targetWord = document.getElementById("wordInput").value;
+        console.log(targetWord);
+        guess="";
+        if (targetWord !== "") {
+            document.getElementById("targetInputArea").style = "display:none";
+        }
+
+        return false;
+    })
+    
+    function pickRandom(){
+        fetch(`/choose_random_word`)
+            .then(response => response.text())
+            .then(word => {
+                //future bug fix notes: should probably add check here to see if the random word
+                //is a valid latin word
+                targetWord = word;
+                console.log(targetWord)
+                document.getElementById("targetInputArea").style = "display:none";
+            })
+    }
+
+    function colorizeCells(colorCodes) {
+        const styleMapping = {
+            'n': 'gray',
+            'e': 'gray', // e stands for keyboard exception, meaning that while the cell is made gray the button on the keyboard isn't, as the letter is elsewhere in the word
+            'y': 'yellow',
+            'g': 'green'
+        }
+
+        for (let colI = 0; colI <= 4; ++colI) {
+            const cellElement = cellElementAt(row, colI);
+            const colorCode = colorCodes.charAt(colI);
+            cellElement.style.backgroundColor = styleMapping[colorCode]
+            console.log(colorCode)
+
+            if (colorCode === "n") {
+                const keyboardButtonElement = document.getElementById(cellElement.textContent);
+                keyboardButtonElement.style.backgroundColor = "gray";
+            }
+        }
+    }
+
+    function won() {
+        if (hasWon) {
+            console.log("function called")
+            console.log("Hooray!")
+            colorizeCells("ggggg")
+            popup.style.backgroundColor = "green"
+            popup.style.color = "white"
+            message.innerHTML = "You win!"
+            triesDisplay.textContent = "Tries: " + (tries + 1)
+            defUrl.href = "https://www.latindictionary.io/dictionary?q=" + targetWord.toUpperCase()
+            defUrl.innerHTML = "Click here for definition"
+        }
+    }
+
+    function lost() {
+        popup.style.backgroundColor = "red"
+        popup.style.color = "white"
+        message.innerHTML = "You lose!"
+        targetWordDisplay.innerHTML = "The word was " + targetWord
+        defUrl.href = "https://www.latindictionary.io/dictionary?q=" + targetWord.toUpperCase()
+        defUrl.innerHTML = "Click here for definition"
+
+        // definition testing
+        console.log('https://www.latindictionary.io/dictionary?q=' + targetWord.toUpperCase())
+    }
+
+    function deleteLetter() {
+        guess = guess.slice(0, -1);
+        if (column !== 0) {
+            column -= 1;
+        }
+        cellElementAt(row, column).textContent = "";
+    }
+
+    function addLetter(buttonLetter) {
+        console.log("guess before: " + guess)
+        if (guess.length < 5) {
+            cellElementAt(row, column).textContent = buttonLetter;
+            guess += buttonLetter;
+            ++column;
+        }
+        console.log("guess after: " + guess)
+    }
+
+    function enterGuess() {
+        console.log(guess)
+        if (guess === targetWord) {
+            hasWon = true;
+            won()
+        }
+        if (guess.length === 5) {
+            fetch(`/validate_word/${guess}`)
+                .then(response => response.text())
+                .then(valid => {
+                    if (valid === "True") {
+                        fetch(`/colorize_guess/${targetWord}/${guess}`)
+                            .then(response => response.text())
+                            .then(colorCodes => {
+                                console.log(colorCodes)
+                                colorizeCells(colorCodes)
+                                ++row;
+                                ++tries;
+                                if (tries === 6) {
+                                    hasLost = true;
+                                    lost()
+                                }
+                            })
+                        column = 0;
+                        guess = ''
+                    } else {
+                        alert("Invalid Word")
+                    }
+                })
+        }
+    }
+
+    function processInput(buttonPressed) {
+        if (targetWord !== "") {
+            console.log(buttonPressed)
+            if (buttonPressed === "Delete" || buttonPressed === "Del" || buttonPressed === "Backspace") {
+                deleteLetter();
+            } else if (buttonPressed === "Enter") {
+                enterGuess();
+            } else if (buttonPressed >= "a" && buttonPressed <= "z") {
+                console.log("calling addLetter")
+                addLetter(buttonPressed);
+            }
+        }
+    }
+
+    document.querySelectorAll('button').forEach(button => {
+        button.addEventListener("click", () => {
+            if (button.textContent !== "Submit") {
+                console.log('Button clicked:', button.textContent);
+                processInput(button.textContent);
+            }
+        });
+    });
+
+    document.addEventListener("keydown", ev => {
+        processInput(ev.key)
+    })
+
+    if (hasWon) {
+        won()
+    }
+    if (hasLost) {
+        lost()
+    }
+
+    // manages user control buttons
+    document.getElementById("surrender").addEventListener("click", function() {
+        if (targetWord !== '') {
+            lost()
+        } else {
+            alert("You can't give up right now! You haven't even started! :)")
+        }
+    })
+
+    document.getElementById("settings").addEventListener("click", function() {
+        alert("This doesn't do anything - yet ;)")
+    })
+
+    document.getElementById("reset").addEventListener("click", function() {
+        location.reload();
+    })
+
+</script>
+</body>
+</html>
